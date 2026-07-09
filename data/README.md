@@ -1,15 +1,11 @@
-# HFI v1 data folder
+# HFI Explorer data
 
-This folder contains the official data inputs used by the current HFI Explorer build.
+This folder contains the GitHub Pages-ready data release for the HFI Explorer.
 
-## Source files
+- `hfi_tract_data.csv` — full v1.0 tract-level HFI web-release data, 2,229 mapped NYC tracts.
+- `hfi_tracts.geojson` — browser-ready tract geometry and HFI attributes for Leaflet.
+- `hfi_tracts.js` — embedded JavaScript version of the tract map layer.
+- `hfi_hospitals.csv` — linked hospital/HCAHPS data used by the Explorer, 22 hospitals with complete communication outcomes.
+- `hfi_hospitals.js` — embedded JavaScript version of the hospital CSV.
 
-- `hfi_tract_data.csv` — tract-level HFI values and provider-time metrics.
-- `nytracts_shp.csv` — original coordinate export used to reconstruct tract polygons. Not included in the GitHub web-upload package because it exceeds GitHub's 25 MB browser upload limit.
-- `hfi_hospitals.csv` — linked hospital/HCAHPS validation file.
-
-## Browser-ready derived file
-
-- `hfi_tracts.geojson` — generated from `hfi_tract_data.csv` and `nytracts_shp.csv` for fast Leaflet rendering.
-
-The original CSV files are preserved for transparency and download. The GeoJSON file is derived only to make the public web explorer faster and easier to maintain.
+The larger raw coordinate export used to generate the GeoJSON is archived separately because GitHub's web uploader rejects individual files larger than 25 MB.
