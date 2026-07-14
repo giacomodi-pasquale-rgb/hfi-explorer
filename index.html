@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Healthcare Fragmentation Index | HFI Explorer</title>
+  <meta name="description" content="The Healthcare Fragmentation Index is a reproducible tract-level framework for measuring the structural organization and navigability of local healthcare environments." />
+  <link rel="preconnect" href="https://unpkg.com" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="index.html" aria-label="HFI home">
+      <span class="brand-mark">HFI</span>
+      <span class="brand-text">Healthcare Fragmentation Index</span>
+    </a>
+    <button class="nav-toggle" aria-expanded="false" aria-controls="site-nav">Menu</button>
+    <nav id="site-nav" class="site-nav" aria-label="Main navigation">
+      <a href="index.html" class="active">Home</a>
+      <a href="explorer.html">HFI Explorer</a>
+      <a href="about.html">About HFI</a>
+      <a href="publications.html">Publications</a>
+      <a href="data.html">Download Data</a>
+      <a href="code.html">Download Code</a>
+      <a href="citation.html">Citation</a>
+      <a href="future.html">Future Versions</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Official research companion site</p>
+        <div class="release-badge">HFI v1.0 · NYC release · July 2026</div>
+        <h1>Mapping the structure of local healthcare environments.</h1>
+        <p class="lead">The Healthcare Fragmentation Index is a reproducible tract-level framework for measuring whether healthcare resources form a coherent, reachable, and navigable system of care.</p>
+        <div class="hero-actions">
+          <a class="button primary" href="explorer.html">Open the HFI Explorer</a>
+          <a class="button secondary" href="about.html">Read the framework</a>
+        </div>
+      </div>
+      <div class="hero-card" aria-label="HFI summary">
+        <span class="card-kicker">HFI v1.0 NYC release</span>
+        <h2>New York City release map</h2>
+        <div class="mini-map-preview" aria-hidden="true">
+          <span class="mini-tract t1"></span>
+          <span class="mini-tract t2"></span>
+          <span class="mini-tract t3"></span>
+          <span class="mini-tract t4"></span>
+          <span class="mini-tract t5"></span>
+          <span class="mini-tract t6"></span>
+          <span class="mini-hospital h1"></span>
+          <span class="mini-hospital h2"></span>
+          <span class="mini-hospital h3"></span>
+        </div>
+        <div class="stat-grid">
+          <div><strong>2,229</strong><span>mapped tracts</span></div>
+          <div><strong id="home-hospital-count">23</strong><span>linked hospitals</span></div>
+          <div><strong>5</strong><span>NYC boroughs</span></div>
+          <div><strong>v1.0</strong><span>foundational index</span></div>
+        </div>
+        <p>This NYC release displays the full v1.0 tract-level web-release dataset. Higher HFI values indicate more fragmented and structurally constrained healthcare environments.</p>
+      </div>
+    </section>
+
+    <section class="section measure-section">
+      <div class="section-heading">
+        <p class="eyebrow">What the index measures</p>
+        <h2>A structural geography of care</h2>
+        <p>Healthcare systems are usually described by providers, hospitals, quality scores, or distance to care. HFI adds another layer: the local organization of healthcare resources and the burden residents face when trying to navigate them as a coherent system.</p>
+      </div>
+      <div class="measure-strip">
+        <article>
+          <span>01</span>
+          <h3>Accessibility</h3>
+          <p>How reachable the local care environment is from the neighborhood.</p>
+        </article>
+        <article>
+          <span>02</span>
+          <h3>Fragmentation</h3>
+          <p>Whether healthcare resources form a coherent system or a scattered field.</p>
+        </article>
+        <article>
+          <span>03</span>
+          <h3>Patient experience</h3>
+          <p>How local structure can be compared with hospital communication measures.</p>
+        </article>
+        <article>
+          <span>04</span>
+          <h3>Validation</h3>
+          <p>How the index can be tested, replicated, and extended across releases.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section cards-3">
+      <article>
+        <h3>Scientific</h3>
+        <p>Built around a transparent tract-level measurement framework that can be reproduced, audited, and extended.</p>
+      </article>
+      <article>
+        <h3>Interactive</h3>
+        <p>Explore tract-level HFI values, hospitals, neighborhood patterns, and downloadable research outputs.</p>
+      </article>
+      <article>
+        <h3>Extensible</h3>
+        <p>Designed as a long-term research platform for HFI v2, SPARCS-based validation, multi-city replication, and future data releases.</p>
+      </article>
+    </section>
+
+    <section class="section use-hfi">
+      <div class="section-heading">
+        <p class="eyebrow">Use the HFI</p>
+        <h2>Explore, download, and cite the release</h2>
+      </div>
+      <div class="cards-3">
+        <article>
+          <h3>Explore the map</h3>
+          <p>View tract-level HFI patterns and linked hospitals, including NYU Langone Hospitals in the current linked layer.</p>
+          <a class="button small" href="explorer.html">Open Explorer</a>
+        </article>
+        <article>
+          <h3>Download data</h3>
+          <p>Use the browser-ready release files for review, replication, and future manuscript tables.</p>
+          <a class="button small" href="data.html">Get data</a>
+        </article>
+        <article>
+          <h3>Cite the framework</h3>
+          <p>Use the project citation and manuscript title for presentations, drafts, and collaborators.</p>
+          <a class="button small" href="citation.html">Citation</a>
+        </article>
+      </div>
+    </section>
+
+    <section class="section callout">
+      <div>
+        <h2>Current paper</h2>
+        <p><em>The Healthcare Fragmentation Index (HFI): Development and Initial Validation of a Reproducible Framework for Measuring Local Healthcare Environments</em></p>
+      </div>
+      <a class="button secondary" href="citation.html">Citation information</a>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Healthcare Fragmentation Index research program. Prepared for GitHub Pages and future deployment at hfi-index.org.</p>
+  </footer>
+  <script src="data/hfi_hospitals.js"></script>
+  <script src="assets/js/site.js"></script>
+</body>
+</html>
