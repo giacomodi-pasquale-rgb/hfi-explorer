@@ -19,4 +19,16 @@
       }
     });
   });
+  const homeHospitalCount = document.getElementById('home-hospital-count');
+  if (homeHospitalCount && window.HFI_HOSPITALS_CSV) {
+    const hospitalCount = window.HFI_HOSPITALS_CSV
+      .trim()
+      .split(/\r?\n/)
+      .filter(Boolean)
+      .slice(1)
+      .length;
+    if (hospitalCount > 0) {
+      homeHospitalCount.textContent = hospitalCount.toLocaleString();
+    }
+  }
 })();
