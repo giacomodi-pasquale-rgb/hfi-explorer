@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Healthcare Fragmentation Index | HFI Explorer</title>
+  <meta name="description" content="The Healthcare Fragmentation Index is a reproducible tract-level framework for measuring the structural organization and navigability of local healthcare environments." />
+  <link rel="preconnect" href="https://unpkg.com" />
+  <style>
+:root {
+  --ink: #102033;
+  --muted: #5d6b7c;
+  --line: #dbe3ea;
+  --soft: #f4f8fb;
+  --paper: #ffffff;
+  --navy: #0c2440;
+  --blue: #1e5b8f;
+  --teal: #007c89;
+  --amber: #b86e00;
+  --red: #8f2d2d;
+  --shadow: 0 18px 45px rgba(13, 35, 58, .12);
+  --radius: 20px;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; color: var(--ink); background: var(--paper); }
+a { color: inherit; }
+.site-header {
+  position: sticky; top: 0; z-index: 1000; display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  min-height: 72px; padding: .8rem clamp(1rem, 3vw, 2.4rem); border-bottom: 1px solid rgba(219,227,234,.9);
+  background: rgba(255,255,255,.92); backdrop-filter: blur(16px);
+}
+.brand { display: flex; align-items: center; gap: .8rem; text-decoration: none; font-weight: 750; letter-spacing: -.02em; }
+.brand-mark { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; background: linear-gradient(135deg, var(--navy), var(--teal)); color: #fff; font-size: .92rem; letter-spacing: .04em; }
+.brand-text { font-size: 1rem; white-space: nowrap; }
+.site-nav { display: flex; align-items: center; gap: .15rem; flex-wrap: wrap; justify-content: flex-end; }
+.site-nav a { text-decoration: none; color: var(--muted); padding: .55rem .72rem; border-radius: 999px; font-size: .9rem; font-weight: 650; }
+.site-nav a:hover, .site-nav a.active { background: var(--soft); color: var(--navy); }
+.nav-toggle { display: none; border: 1px solid var(--line); background: #fff; padding: .55rem .8rem; border-radius: 999px; font-weight: 700; }
+.hero { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(320px, .8fr); gap: clamp(2rem, 6vw, 5rem); padding: clamp(4rem, 8vw, 7rem) clamp(1rem, 5vw, 5rem); background: linear-gradient(135deg, #fff 0%, #f7fbfd 58%, #edf7f8 100%); }
+.eyebrow { color: var(--teal); text-transform: uppercase; letter-spacing: .12em; font-size: .78rem; font-weight: 800; margin: 0 0 .8rem; }
+.release-badge { display: inline-flex; align-items: center; min-height: 34px; border: 1px solid #cfe5eb; border-radius: 999px; background: #f3fbfc; color: var(--teal); padding: .38rem .7rem; font-size: .82rem; font-weight: 850; margin-bottom: 1rem; }
+h1 { font-size: clamp(2.3rem, 6vw, 5rem); line-height: .98; letter-spacing: -.06em; margin: 0 0 1.2rem; }
+h2 { font-size: clamp(1.45rem, 3vw, 2.15rem); letter-spacing: -.035em; margin: 0 0 .8rem; }
+h3 { margin: 0 0 .5rem; font-size: 1.1rem; }
+p { color: var(--muted); line-height: 1.62; }
+.lead { font-size: clamp(1.08rem, 2vw, 1.35rem); max-width: 760px; }
+.hero-actions { display: flex; gap: .8rem; flex-wrap: wrap; margin-top: 1.8rem; }
+.button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; border-radius: 999px; padding: .75rem 1.05rem; text-decoration: none; border: 1px solid var(--line); font-weight: 750; cursor: pointer; }
+.button.primary { background: var(--navy); color: #fff; border-color: var(--navy); box-shadow: var(--shadow); }
+.button.secondary, .button.small { background: #fff; color: var(--navy); }
+.button.small { min-height: 38px; padding: .55rem .85rem; font-size: .9rem; }
+.hero-card, .cards-3 article, .muted-box, .citation-box { background: rgba(255,255,255,.88); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: clamp(1.2rem, 3vw, 2rem); }
+.card-kicker { display: inline-flex; background: #e9f6f7; color: var(--teal); border-radius: 999px; padding: .4rem .7rem; font-weight: 800; font-size: .82rem; }
+.mini-map-preview { position: relative; min-height: 132px; margin: 1rem 0 1.15rem; border: 1px solid #d8e6ec; border-radius: 18px; overflow: hidden; background: linear-gradient(135deg, #f9fcfd, #eaf3f6); }
+.mini-map-preview::before { content: ""; position: absolute; inset: 0; background-image: linear-gradient(rgba(16,32,51,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(16,32,51,.06) 1px, transparent 1px); background-size: 28px 28px; }
+.mini-tract { position: absolute; display: block; border: 1px solid rgba(255,255,255,.68); box-shadow: 0 8px 20px rgba(16,32,51,.08); }
+.mini-tract.t1 { left: 8%; top: 18%; width: 28%; height: 34%; background: #2c7bb6; clip-path: polygon(0 8%, 90% 0, 100% 74%, 20% 100%); }
+.mini-tract.t2 { left: 31%; top: 9%; width: 25%; height: 40%; background: #abd9e9; clip-path: polygon(12% 0, 100% 10%, 78% 100%, 0 80%); }
+.mini-tract.t3 { left: 54%; top: 18%; width: 33%; height: 35%; background: #ffffbf; clip-path: polygon(0 0, 100% 18%, 90% 88%, 18% 100%); }
+.mini-tract.t4 { left: 12%; top: 50%; width: 31%; height: 34%; background: #fdae61; clip-path: polygon(14% 0, 100% 20%, 78% 100%, 0 78%); }
+.mini-tract.t5 { left: 40%; top: 48%; width: 24%; height: 39%; background: #d8eef4; clip-path: polygon(0 14%, 74% 0, 100% 86%, 20% 100%); }
+.mini-tract.t6 { left: 62%; top: 52%; width: 28%; height: 32%; background: #d7191c; clip-path: polygon(8% 0, 100% 12%, 84% 100%, 0 70%); }
+.mini-hospital { position: absolute; width: 12px; height: 12px; border-radius: 50%; background: var(--navy); border: 3px solid #fff; box-shadow: 0 6px 18px rgba(16,32,51,.28); }
+.mini-hospital.h1 { left: 49%; top: 42%; }
+.mini-hospital.h2 { left: 69%; top: 61%; }
+.mini-hospital.h3 { left: 28%; top: 61%; }
+.stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: .75rem; margin: 1.2rem 0; }
+.stat-grid div, .metric-cards div { border: 1px solid var(--line); border-radius: 16px; padding: 1rem; background: #fff; }
+.stat-grid strong, .metric-cards strong { display: block; font-size: 1.55rem; color: var(--navy); }
+.stat-grid span, .metric-cards span { display: block; color: var(--muted); font-size: .86rem; }
+.section { padding: clamp(2.5rem, 6vw, 5rem) clamp(1rem, 5vw, 5rem); }
+.section-heading { max-width: 760px; margin-bottom: 1.5rem; }
+.split { display: grid; grid-template-columns: minmax(0, .9fr) minmax(320px, 1.1fr); gap: 2rem; align-items: center; }
+.concept-flow { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr; gap: .6rem; align-items: center; }
+.concept-flow div { min-height: 90px; display: grid; place-items: center; text-align: center; padding: 1rem; border-radius: 18px; color: #fff; font-weight: 800; background: linear-gradient(135deg, var(--navy), var(--blue)); }
+.concept-flow span { color: var(--teal); font-weight: 900; }
+.measure-section { background: #fff; }
+.measure-strip { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--line); border-radius: 20px; overflow: hidden; background: #fff; box-shadow: 0 14px 35px rgba(13,35,58,.08); }
+.measure-strip article { min-height: 190px; padding: 1.25rem; border-right: 1px solid var(--line); }
+.measure-strip article:last-child { border-right: 0; }
+.measure-strip span { display: inline-flex; margin-bottom: 1.3rem; color: var(--teal); font-weight: 900; letter-spacing: .08em; font-size: .82rem; }
+.cards-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.cards-3 article { display: flex; flex-direction: column; align-items: flex-start; }
+.cards-3 article .button { margin-top: auto; }
+.use-hfi { background: linear-gradient(180deg, #f7fbfd 0%, #fff 100%); }
+.callout { display: flex; justify-content: space-between; gap: 2rem; align-items: center; background: var(--soft); margin: 0 clamp(1rem, 5vw, 5rem) clamp(2rem, 5vw, 4rem); border-radius: 28px; }
+.content-page { max-width: 1120px; margin: 0 auto; padding: clamp(3rem, 6vw, 5rem) clamp(1rem, 4vw, 2rem); }
+.content-page h1 { font-size: clamp(2.3rem, 5vw, 4rem); }
+.narrow { max-width: 820px; padding-left: 0; padding-right: 0; }
+.clean-list { color: var(--muted); line-height: 1.8; }
+.pub-status { color: var(--teal); font-weight: 800; text-transform: uppercase; letter-spacing: .1em; font-size: .78rem; }
+pre { background: #0c1726; color: #f7fbfd; border-radius: 18px; padding: 1.2rem; overflow: auto; }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.citation-box { margin-bottom: 1rem; color: var(--ink); line-height: 1.7; }
+.timeline { display: grid; gap: 1rem; margin-top: 2rem; }
+.timeline article { border-left: 4px solid var(--teal); padding: 1.2rem 1.4rem; background: var(--soft); border-radius: 0 18px 18px 0; }
+.timeline span { color: var(--teal); font-weight: 900; letter-spacing: .08em; }
+.site-footer { border-top: 1px solid var(--line); padding: 1.5rem clamp(1rem, 4vw, 2.4rem); background: var(--navy); }
+.site-footer p { color: rgba(255,255,255,.82); margin: 0; font-size: .92rem; }
+.explorer-body { height: 100vh; height: 100dvh; overflow: hidden; }
+.explorer-header { position: relative; z-index: 1200; }
+.explorer-shell { position: fixed; top: var(--hfi-header-height, 72px); left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: 380px minmax(0, 1fr); min-height: 0; background: #e8eef3; }
+.explorer-panel { overflow: auto; border-right: 1px solid var(--line); background: linear-gradient(180deg, #fff 0%, #f8fbfd 100%); padding: 1.2rem; z-index: 500; min-height: 0; box-shadow: 8px 0 28px rgba(13, 35, 58, .06); }
+.explorer-panel h1 { font-size: 2.1rem; }
+.panel-section { border-bottom: 1px solid var(--line); padding: 1rem 0; }
+.panel-section:first-child { padding-top: 0; }
+.panel-section label { display: block; font-weight: 750; margin-bottom: .45rem; }
+input[type="search"], select { width: 100%; border: 1px solid var(--line); border-radius: 14px; min-height: 44px; padding: .75rem; font: inherit; color: var(--ink); background: #fff; }
+.two-col-controls { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
+.two-col-controls label { border: 1px solid var(--line); padding: .75rem; border-radius: 14px; display: flex; align-items: center; gap: .5rem; }
+.metric-cards { display: grid; grid-template-columns: 1fr; gap: .6rem; }
+.data-status { border-radius: 16px; padding: .85rem; background: #fff8e9; color: #7a4a00; border: 1px solid #f2d9a5; font-weight: 700; }
+.data-status.ready { background: #edf8f3; color: #0d6949; border-color: #bfe6d5; }
+.data-status.error { background: #fff0f0; color: #8f2d2d; border-color: #f0c1c1; }
+.map-wrap { min-width: 0; min-height: 0; position: relative; overflow: hidden; background: #e8eef3; width: 100%; height: 100%; }
+.map-wrap #map, #map { position: relative; display: block; height: 100%; width: 100%; min-height: 0; background: #e8eef3; }
+.leaflet-container { height: 100% !important; width: 100% !important; }
+.leaflet-pane, .leaflet-tile, .leaflet-marker-icon, .leaflet-marker-shadow, .leaflet-tile-container, .leaflet-pane > svg, .leaflet-pane > canvas, .leaflet-zoom-box, .leaflet-image-layer, .leaflet-layer { position: absolute; }
+.legend { display: grid; gap: .35rem; }
+.legend-row { display: grid; grid-template-columns: 26px 1fr; gap: .55rem; align-items: center; font-size: .86rem; color: var(--muted); }
+.legend-swatch { width: 26px; height: 18px; border-radius: 5px; border: 1px solid rgba(0,0,0,.08); }
+.note { font-size: .86rem; }
+.feature-info h2 { font-size: 1.2rem; }
+.info-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.info-table th, .info-table td { border-bottom: 1px solid var(--line); padding: .45rem 0; text-align: left; vertical-align: top; }
+.info-table th { color: var(--muted); font-weight: 750; width: 44%; }
+.leaflet-popup-content { font: 14px/1.45 Inter, system-ui, sans-serif; color: var(--ink); }
+.leaflet-control-layers { border: 1px solid var(--line)!important; box-shadow: var(--shadow)!important; border-radius: 14px!important; }
+.map-toolbar { position: absolute; z-index: 900; top: 1rem; right: 1rem; display: flex; gap: .55rem; flex-wrap: wrap; }
+.map-toolbar button { border: 1px solid rgba(16,32,51,.18); background: rgba(255,255,255,.94); color: var(--navy); border-radius: 999px; padding: .58rem .78rem; font-weight: 800; box-shadow: 0 10px 25px rgba(16,32,51,.12); cursor: pointer; }
+.map-toolbar button:hover { background: #fff; transform: translateY(-1px); }
+.legend-wrap h2, .feature-info h2, .method-card h2 { font-size: 1.02rem; letter-spacing: -.02em; }
+.legend-gradient { height: 14px; border-radius: 999px; border: 1px solid rgba(16,32,51,.16); background: linear-gradient(90deg, #2c7bb6, #abd9e9, #ffffbf, #fdae61, #d7191c); margin: .55rem 0 .75rem; }
+.method-card { background: #f4f9fb; margin-top: .25rem; border-radius: 16px; border: 1px solid #d7e8ee; padding: 1rem !important; }
+.method-card p { margin-bottom: 0; }
+.leaflet-interactive { outline: none; }
+.leaflet-control-zoom a { color: var(--navy)!important; }
+
+@media (max-width: 980px) {
+  .nav-toggle { display: inline-flex; }
+  .site-nav { position: absolute; display: none; top: 72px; right: 1rem; left: 1rem; background: #fff; border: 1px solid var(--line); border-radius: 20px; padding: .8rem; box-shadow: var(--shadow); }
+  .site-nav.open { display: grid; grid-template-columns: 1fr 1fr; }
+  .hero, .split, .cards-3, .measure-strip { grid-template-columns: 1fr; }
+  .measure-strip article { border-right: 0; border-bottom: 1px solid var(--line); min-height: auto; }
+  .measure-strip article:last-child { border-bottom: 0; }
+  .concept-flow { grid-template-columns: 1fr; }
+  .concept-flow span { transform: rotate(90deg); justify-self: center; }
+  .callout { flex-direction: column; align-items: flex-start; }
+  .explorer-body { height: auto; overflow: auto; }
+  .explorer-shell { position: relative; top: auto; left: auto; right: auto; bottom: auto; grid-template-columns: 1fr; min-height: 0; }
+  .explorer-panel { border-right: 0; border-bottom: 1px solid var(--line); max-height: none; }
+  .map-wrap { height: 68vh; min-height: 520px; }
+  .map-wrap #map, #map { height: 100%; }
+}
+@media (max-width: 620px) {
+  .brand-text { display: none; }
+  .site-nav.open { grid-template-columns: 1fr; }
+  .hero { padding-top: 3rem; }
+  h1 { letter-spacing: -.045em; }
+}
+
+</style>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="index.html" aria-label="HFI home">
+      <span class="brand-mark">HFI</span>
+      <span class="brand-text">Healthcare Fragmentation Index</span>
+    </a>
+    <button class="nav-toggle" aria-expanded="false" aria-controls="site-nav">Menu</button>
+    <nav id="site-nav" class="site-nav" aria-label="Main navigation">
+      <a href="index.html" class="active">Home</a>
+      <a href="explorer.html">HFI Explorer</a>
+      <a href="about.html">About HFI</a>
+      <a href="publications.html">Publications</a>
+      <a href="data.html">Download Data</a>
+      <a href="code.html">Download Code</a>
+      <a href="citation.html">Citation</a>
+      <a href="future.html">Future Versions</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Official research companion site</p>
+        <div class="release-badge">HFI v1.0 · NYC release · July 2026</div>
+        <h1>Mapping the structure of local healthcare environments.</h1>
+        <p class="lead">The Healthcare Fragmentation Index is a reproducible tract-level framework for measuring whether healthcare resources form a coherent, reachable, and navigable system of care.</p>
+        <div class="hero-actions">
+          <a class="button primary" href="explorer.html">Open the HFI Explorer</a>
+          <a class="button secondary" href="about.html">Read the framework</a>
+        </div>
+      </div>
+      <div class="hero-card" aria-label="HFI summary">
+        <span class="card-kicker">HFI v1.0 NYC release</span>
+        <h2>New York City release map</h2>
+        <div class="mini-map-preview" aria-hidden="true">
+          <span class="mini-tract t1"></span>
+          <span class="mini-tract t2"></span>
+          <span class="mini-tract t3"></span>
+          <span class="mini-tract t4"></span>
+          <span class="mini-tract t5"></span>
+          <span class="mini-tract t6"></span>
+          <span class="mini-hospital h1"></span>
+          <span class="mini-hospital h2"></span>
+          <span class="mini-hospital h3"></span>
+        </div>
+        <div class="stat-grid">
+          <div><strong>2,229</strong><span>mapped tracts</span></div>
+          <div><strong id="home-hospital-count">23</strong><span>linked hospitals</span></div>
+          <div><strong>5</strong><span>NYC boroughs</span></div>
+          <div><strong>v1.0</strong><span>foundational index</span></div>
+        </div>
+        <p>This NYC release displays the full v1.0 tract-level web-release dataset. Higher HFI values indicate more fragmented and structurally constrained healthcare environments.</p>
+      </div>
+    </section>
+
+    <section class="section measure-section">
+      <div class="section-heading">
+        <p class="eyebrow">What the index measures</p>
+        <h2>A structural geography of care</h2>
+        <p>Healthcare systems are usually described by providers, hospitals, quality scores, or distance to care. HFI adds another layer: the local organization of healthcare resources and the burden residents face when trying to navigate them as a coherent system.</p>
+      </div>
+      <div class="measure-strip">
+        <article>
+          <span>01</span>
+          <h3>Accessibility</h3>
+          <p>How reachable the local care environment is from the neighborhood.</p>
+        </article>
+        <article>
+          <span>02</span>
+          <h3>Fragmentation</h3>
+          <p>Whether healthcare resources form a coherent system or a scattered field.</p>
+        </article>
+        <article>
+          <span>03</span>
+          <h3>Patient experience</h3>
+          <p>How local structure can be compared with hospital communication measures.</p>
+        </article>
+        <article>
+          <span>04</span>
+          <h3>Validation</h3>
+          <p>How the index can be tested, replicated, and extended across releases.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section cards-3">
+      <article>
+        <h3>Scientific</h3>
+        <p>Built around a transparent tract-level measurement framework that can be reproduced, audited, and extended.</p>
+      </article>
+      <article>
+        <h3>Interactive</h3>
+        <p>Explore tract-level HFI values, hospitals, neighborhood patterns, and downloadable research outputs.</p>
+      </article>
+      <article>
+        <h3>Extensible</h3>
+        <p>Designed as a long-term research platform for HFI v2, SPARCS-based validation, multi-city replication, and future data releases.</p>
+      </article>
+    </section>
+
+    <section class="section use-hfi">
+      <div class="section-heading">
+        <p class="eyebrow">Use the HFI</p>
+        <h2>Explore, download, and cite the release</h2>
+      </div>
+      <div class="cards-3">
+        <article>
+          <h3>Explore the map</h3>
+          <p>View tract-level HFI patterns and linked hospitals, including NYU Langone Hospitals in the current linked layer.</p>
+          <a class="button small" href="explorer.html">Open Explorer</a>
+        </article>
+        <article>
+          <h3>Download data</h3>
+          <p>Use the browser-ready release files for review, replication, and future manuscript tables.</p>
+          <a class="button small" href="data.html">Get data</a>
+        </article>
+        <article>
+          <h3>Cite the framework</h3>
+          <p>Use the project citation and manuscript title for presentations, drafts, and collaborators.</p>
+          <a class="button small" href="citation.html">Citation</a>
+        </article>
+      </div>
+    </section>
+
+    <section class="section callout">
+      <div>
+        <h2>Current paper</h2>
+        <p><em>The Healthcare Fragmentation Index (HFI): Development and Initial Validation of a Reproducible Framework for Measuring Local Healthcare Environments</em></p>
+      </div>
+      <a class="button secondary" href="citation.html">Citation information</a>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Healthcare Fragmentation Index research program. Prepared for GitHub Pages and future deployment at hfi-index.org.</p>
+  </footer>
+  <script src="data/hfi_hospitals.js"></script>
+  <script src="assets/js/site.js"></script>
+</body>
+</html>
