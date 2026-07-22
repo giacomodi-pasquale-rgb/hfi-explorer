@@ -68,7 +68,7 @@ function waitForMapBox() {
 
 async function initExplorer() {
   updateExplorerHeight();
-  map = L.map('map', { zoomControl: true, zoomSnap: 0.25, preferCanvas: true, doubleClickZoom: false }).setView(CONFIG.mapCenter, CONFIG.mapZoom);
+  map = L.map('map', { zoomControl: true, zoomSnap: 0.25, preferCanvas: true }).setView(CONFIG.mapCenter, CONFIG.mapZoom);
   map.whenReady(() => scheduleMapResize());
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
     attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
@@ -88,7 +88,6 @@ async function initExplorer() {
 
   tractLayer = L.geoJSON(null, { pane: 'tractPane', style: styleTract, onEachFeature: onEachTract }).addTo(map);
   hospitalLayer = L.layerGroup().addTo(map);
-  map.on({ click: handleMapTractClick, dblclick: handleMapTractClick });
   wireControls();
   scheduleMapResize();
 
@@ -347,8 +346,7 @@ function drawHospitals(records) {
       fillColor: Number.isFinite(comm) ? '#ffd166' : '#ffffff',
       fillOpacity: .98
     };
-    marker.on('click', e => {
-      L.DomEvent.stop(e);
+    marker.on('click', () => {
       selectHospital(row, marker, comm, rating);
     });
     marker.bindPopup(hospitalPopup(row, comm, rating));
@@ -382,63 +380,6 @@ function selectHospital(row, marker, comm = numberValue(getValue(row, CONFIG.com
 function resetHospitalMarker(marker) {
   if (!marker) return;
   marker.setStyle(marker.defaultStyle || { radius: 7.5, color: '#07192c', weight: 2.1, fillColor: '#ffd166', fillOpacity: .98 });
-}
-
-function handleMapTractClick(e) {
-  if (!map.hasLayer(tractLayer) || !e?.latlng) return;
-  const match = findTractLayerAtLatLng(e.latlng);
-  if (!match) return;
-  if (e.originalEvent) L.DomEvent.stop(e.originalEvent);
-  selectTract(match.feature, match.layer);
-}
-
-function findTractLayerAtLatLng(latlng) {
-  let selected = null;
-  let smallestBounds = Infinity;
-  tractLayer.eachLayer(layer => {
-    if (!layer.feature || !layer.getBounds?.().contains(latlng)) return;
-    if (!featureContainsLatLng(layer.feature, latlng)) return;
-    const bounds = layer.getBounds();
-    const boundsSize = bounds.getNorthWest().distanceTo(bounds.getSouthEast());
-    if (boundsSize < smallestBounds) {
-      smallestBounds = boundsSize;
-      selected = { feature: layer.feature, layer };
-    }
-  });
-  return selected;
-}
-
-function featureContainsLatLng(feature, latlng) {
-  const geometry = feature?.geometry;
-  if (!geometry || !Array.isArray(geometry.coordinates)) return false;
-  const lng = latlng.lng;
-  const lat = latlng.lat;
-  if (geometry.type === 'Polygon') return polygonContainsLatLng(geometry.coordinates, lng, lat);
-  if (geometry.type === 'MultiPolygon') {
-    return geometry.coordinates.some(polygon => polygonContainsLatLng(polygon, lng, lat));
-  }
-  return false;
-}
-
-function polygonContainsLatLng(polygon, lng, lat) {
-  if (!Array.isArray(polygon) || !polygon.length) return false;
-  if (!ringContainsLatLng(polygon[0], lng, lat)) return false;
-  return !polygon.slice(1).some(ring => ringContainsLatLng(ring, lng, lat));
-}
-
-function ringContainsLatLng(ring, lng, lat) {
-  if (!Array.isArray(ring) || ring.length < 3) return false;
-  let inside = false;
-  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-    const xi = numberValue(ring[i]?.[0]);
-    const yi = numberValue(ring[i]?.[1]);
-    const xj = numberValue(ring[j]?.[0]);
-    const yj = numberValue(ring[j]?.[1]);
-    if (![xi, yi, xj, yj].every(Number.isFinite)) continue;
-    const crosses = (yi > lat) !== (yj > lat);
-    if (crosses && lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) inside = !inside;
-  }
-  return inside;
 }
 
 function wireControls() {
