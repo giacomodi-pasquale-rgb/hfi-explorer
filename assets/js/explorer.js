@@ -68,7 +68,7 @@ function waitForMapBox() {
 
 async function initExplorer() {
   updateExplorerHeight();
-  map = L.map('map', { zoomControl: true, zoomSnap: 0.25, preferCanvas: true }).setView(CONFIG.mapCenter, CONFIG.mapZoom);
+  map = L.map('map', { zoomControl: true, zoomSnap: 0.25 }).setView(CONFIG.mapCenter, CONFIG.mapZoom);
   map.whenReady(() => scheduleMapResize());
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
     attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
@@ -86,7 +86,13 @@ async function initExplorer() {
   map.createPane('hospitalPane');
   map.getPane('hospitalPane').style.zIndex = 650;
 
-  tractLayer = L.geoJSON(null, { pane: 'tractPane', style: styleTract, onEachFeature: onEachTract }).addTo(map);
+  tractLayer = L.geoJSON(null, {
+    pane: 'tractPane',
+    renderer: L.svg({ padding: 0.35 }),
+    style: styleTract,
+    onEachFeature: onEachTract,
+    interactive: true
+  }).addTo(map);
   hospitalLayer = L.layerGroup().addTo(map);
   wireControls();
   scheduleMapResize();
@@ -291,6 +297,12 @@ function onEachTract(feature, layer) {
       if (layer !== selectedTractLayer) tractLayer.resetStyle(layer);
     },
     click: () => selectTract(feature, layer)
+  });
+  layer.once('add', () => {
+    if (layer._path) {
+      layer._path.style.pointerEvents = 'auto';
+      layer._path.setAttribute('tabindex', '0');
+    }
   });
 }
 
