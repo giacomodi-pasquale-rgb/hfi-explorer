@@ -24,10 +24,12 @@ const CONFIG = {
   hfiClassAliases: ['frag_q', 'hfi_class', 'hfi_quintile']
 };
 
-let map, tractLayer, hospitalLayer, tractFeatures = [], hospitalRecords = [];
+let map, tractLayer, hospitalLayer, tractFeatures = [], hospitalRecords = [], hospitalMarkers = [];
 let hfiBreaks = [];
 let fullBounds = null;
 let mapWrapResizeObserver = null;
+let selectedTractLayer = null;
+let selectedHospitalMarker = null;
 
 bootExplorer();
 window.addEventListener('load', () => { updateExplorerHeight(); scheduleMapResize(); });
@@ -206,6 +208,7 @@ function buildMapFromGeoJson(geojson, hospitalRows) {
     .map(row => ({ ...row, name: getValue(row, CONFIG.hospitalNameAliases) || 'Hospital' }))
     .filter(row => Number.isFinite(numberValue(getValue(row, CONFIG.latitudeAliases))) && Number.isFinite(numberValue(getValue(row, CONFIG.longitudeAliases))));
 
+  populateHospitalOptions(hospitalRecords);
   drawHospitals(hospitalRecords);
   updateStats(hfiValues, hospitalRecords.length);
   drawLegend();
@@ -276,25 +279,53 @@ function styleTract(feature) {
 }
 
 function onEachTract(feature, layer) {
+  layer.options.interactive = true;
   layer.on({
-    mouseover: () => { layer.setStyle({ weight: 2.2, color: '#07192c', fillOpacity: .88 }); layer.bringToFront(); },
-    mouseout: () => tractLayer.resetStyle(layer),
-    click: () => {
-      const p = feature.properties;
-      showFeatureInfo('Tract', p.geoid, {
-        Borough: p.borough_label,
-        'HFI value': formatNumber(p.hfi_value, 3),
-        'HFI category': p.hfi_class || classifyHfi(p.hfi_value),
-        'Provider time weight': formatNumber(numberValue(getValue(p, CONFIG.tractProviderAliases)), 3),
-        Interpretation: interpretHfi(p.hfi_value)
-      });
-      layer.bindPopup(`<strong>Tract ${escapeHtml(p.geoid)}</strong><br>HFI: ${formatNumber(p.hfi_value, 3)}<br>${escapeHtml(p.borough_label)}`).openPopup();
-    }
+    mouseover: () => {
+      if (layer !== selectedTractLayer) {
+        layer.setStyle({ weight: 2.2, color: '#07192c', fillOpacity: .88 });
+      }
+      layer.bringToFront();
+    },
+    mouseout: () => {
+      if (layer !== selectedTractLayer) tractLayer.resetStyle(layer);
+    },
+    click: () => selectTract(feature, layer)
   });
+}
+
+function selectTract(feature, layer, options = {}) {
+  if (!feature || !layer) return;
+  if (selectedTractLayer && selectedTractLayer !== layer) {
+    tractLayer.resetStyle(selectedTractLayer);
+  }
+  if (selectedHospitalMarker) {
+    resetHospitalMarker(selectedHospitalMarker);
+    selectedHospitalMarker = null;
+  }
+
+  selectedTractLayer = layer;
+  layer.setStyle({ color: '#07192c', weight: 3.4, opacity: 1, fillOpacity: .9 });
+  layer.bringToFront();
+
+  const p = feature.properties;
+  showFeatureInfo('Tract', `Tract ${p.geoid}`, {
+    Borough: p.borough_label,
+    'HFI value': formatNumber(p.hfi_value, 3),
+    'HFI category': p.hfi_class || classifyHfi(p.hfi_value),
+    'Provider time weight': formatNumber(numberValue(getValue(p, CONFIG.tractProviderAliases)), 3),
+    Interpretation: interpretHfi(p.hfi_value)
+  });
+
+  layer.bindPopup(`<strong>Tract ${escapeHtml(p.geoid)}</strong><br>HFI: ${formatNumber(p.hfi_value, 3)}<br>${escapeHtml(p.borough_label)}`).openPopup();
+  focusFeatureInfo();
+  if (options.fit) fitMapWhenStable(layer.getBounds());
 }
 
 function drawHospitals(records) {
   hospitalLayer.clearLayers();
+  hospitalMarkers = [];
+  selectedHospitalMarker = null;
   records.forEach(row => {
     const lat = numberValue(getValue(row, CONFIG.latitudeAliases));
     const lon = numberValue(getValue(row, CONFIG.longitudeAliases));
@@ -302,25 +333,53 @@ function drawHospitals(records) {
     const rating = numberValue(row.hospital_overall_rating);
     const marker = L.circleMarker([lat, lon], {
       pane: 'hospitalPane',
-      radius: 8,
+      radius: 7.5,
       color: '#07192c',
-      weight: 2.2,
+      weight: 2.1,
       fillColor: Number.isFinite(comm) ? '#ffd166' : '#ffffff',
       fillOpacity: .98
     });
+    marker.defaultStyle = {
+      radius: 7.5,
+      color: '#07192c',
+      weight: 2.1,
+      fillColor: Number.isFinite(comm) ? '#ffd166' : '#ffffff',
+      fillOpacity: .98
+    };
     marker.on('click', () => {
-      showFeatureInfo('Hospital', row.name, {
-        Borough: standardBorough(row.county || ''),
-        'Overall CMS rating': formatNumber(rating, 0),
-        'Communication index': formatNumber(comm, 2),
-        'Doctor communication': formatNumber(numberValue(row.hcahps_doctor_comm_linear), 1),
-        'Nurse communication': formatNumber(numberValue(row.hcahps_nurse_comm_linear), 1),
-        'Linked tract HFI': formatNumber(numberValue(row.fragmentation), 3)
-      });
+      selectHospital(row, marker, comm, rating);
     });
-    marker.bindPopup(`<strong>${escapeHtml(row.name)}</strong>${Number.isFinite(comm) ? `<br>Communication index: ${formatNumber(comm, 2)}` : ''}`);
+    marker.bindPopup(hospitalPopup(row, comm, rating));
     marker.addTo(hospitalLayer);
+    hospitalMarkers.push({ row, marker, lat, lon });
   });
+}
+
+function selectHospital(row, marker, comm = numberValue(getValue(row, CONFIG.communicationAliases)), rating = numberValue(row.hospital_overall_rating)) {
+  if (!row || !marker) return;
+  if (selectedTractLayer) {
+    tractLayer.resetStyle(selectedTractLayer);
+    selectedTractLayer = null;
+  }
+  if (selectedHospitalMarker && selectedHospitalMarker !== marker) resetHospitalMarker(selectedHospitalMarker);
+  selectedHospitalMarker = marker;
+  marker.setStyle({ radius: 11, color: '#07192c', weight: 3.2, fillColor: '#ffd166', fillOpacity: 1 });
+  marker.bringToFront();
+  marker.openPopup();
+  showFeatureInfo('Hospital', row.name, {
+    Borough: standardBorough(row.county || ''),
+    'Overall CMS rating': formatNumber(rating, 0),
+    'Communication index': formatNumber(comm, 2),
+    'Doctor communication': formatNumber(numberValue(row.hcahps_doctor_comm_linear), 1),
+    'Nurse communication': formatNumber(numberValue(row.hcahps_nurse_comm_linear), 1),
+    'Linked tract HFI': formatNumber(numberValue(row.fragmentation), 3)
+  });
+  focusFeatureInfo();
+}
+
+function resetHospitalMarker(marker) {
+  if (!marker) return;
+  marker.setStyle(marker.defaultStyle || { radius: 7.5, color: '#07192c', weight: 2.1, fillColor: '#ffd166', fillOpacity: .98 });
 }
 
 function wireControls() {
@@ -328,6 +387,10 @@ function wireControls() {
   document.getElementById('toggle-hospitals').addEventListener('change', e => e.target.checked ? hospitalLayer.addTo(map) : map.removeLayer(hospitalLayer));
   document.getElementById('borough-filter').addEventListener('change', filterMap);
   document.getElementById('search-input').addEventListener('input', filterMap);
+  document.getElementById('clear-search')?.addEventListener('click', () => {
+    document.getElementById('search-input').value = '';
+    filterMap(false);
+  });
   document.getElementById('reset-map')?.addEventListener('click', () => {
     document.getElementById('borough-filter').value = 'all';
     document.getElementById('search-input').value = '';
@@ -344,6 +407,7 @@ function filterMap(shouldFit = true) {
   const borough = document.getElementById('borough-filter').value;
   const query = document.getElementById('search-input').value.trim().toLowerCase();
   tractLayer.clearLayers();
+  selectedTractLayer = null;
   const filtered = tractFeatures.filter(f => {
     const p = f.properties;
     const boroughMatch = borough === 'all' || p.borough_label === borough;
@@ -363,8 +427,22 @@ function filterMap(shouldFit = true) {
   const filteredValues = filtered.map(f => f.properties.hfi_value).filter(v => Number.isFinite(v));
   if (filteredValues.length) {
     document.getElementById('hfi-range').textContent = `${formatNumber(Math.min(...filteredValues), 2)} to ${formatNumber(Math.max(...filteredValues), 2)}`;
+  } else {
+    document.getElementById('hfi-range').textContent = '—';
   }
+  updateSummary(filtered.length, filteredHospitals.length, filteredValues);
   const b = tractLayer.getBounds();
+  if (shouldFit && query && hospitalMarkers.length && (filtered.length === 0 || hospitalMarkers.length <= 3)) {
+    const hospitalBounds = L.latLngBounds(hospitalMarkers.map(item => [item.lat, item.lon]));
+    if (hospitalBounds.isValid()) {
+      fitMapWhenStable(hospitalBounds);
+      if (hospitalMarkers.length === 1) {
+        hospitalMarkers[0].marker.openPopup();
+        hospitalMarkers[0].marker.fire('click');
+      }
+      return;
+    }
+  }
   if (shouldFit && b.isValid() && (borough !== 'all' || query)) fitMapWhenStable(b);
 }
 
@@ -373,6 +451,19 @@ function updateStats(values, hospitals) {
   document.getElementById('hospital-count').textContent = hospitals.toLocaleString();
   const min = Math.min(...values), max = Math.max(...values);
   document.getElementById('hfi-range').textContent = values.length ? `${formatNumber(min, 2)} to ${formatNumber(max, 2)}` : '—';
+  updateSummary(tractFeatures.length, hospitals, values);
+}
+
+function updateSummary(tracts, hospitals, values) {
+  const tractEl = document.getElementById('summary-tract-count');
+  const hospitalEl = document.getElementById('summary-hospital-count');
+  const rangeEl = document.getElementById('summary-hfi-range');
+  if (tractEl) tractEl.textContent = tracts.toLocaleString();
+  if (hospitalEl) hospitalEl.textContent = hospitals.toLocaleString();
+  if (rangeEl) {
+    const clean = values.filter(v => Number.isFinite(v));
+    rangeEl.textContent = clean.length ? `${formatNumber(Math.min(...clean), 2)} to ${formatNumber(Math.max(...clean), 2)}` : '—';
+  }
 }
 
 function drawLegend() {
@@ -391,7 +482,45 @@ function drawLegend() {
 function showFeatureInfo(type, title, rows) {
   const el = document.getElementById('feature-info');
   const table = Object.entries(rows).map(([k, v]) => `<tr><th>${escapeHtml(k)}</th><td>${escapeHtml(v)}</td></tr>`).join('');
-  el.innerHTML = `<h2>${escapeHtml(type)}: ${escapeHtml(title)}</h2><table class="info-table">${table}</table>`;
+  el.innerHTML = `<span class="feature-kicker">${escapeHtml(type)}</span><h2>${escapeHtml(title)}</h2><table class="info-table">${table}</table>`;
+  el.classList.add('has-selection');
+}
+
+function focusFeatureInfo() {
+  const panel = document.querySelector('.explorer-panel');
+  const el = document.getElementById('feature-info');
+  if (!panel || !el) return;
+  const panelBox = panel.getBoundingClientRect();
+  const elBox = el.getBoundingClientRect();
+  if (elBox.top < panelBox.top || elBox.bottom > panelBox.bottom) {
+    el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+}
+
+function hospitalPopup(row, comm, rating) {
+  const tractHfi = numberValue(row.fragmentation);
+  return `<div class="popup-card">
+    <strong>${escapeHtml(row.name)}</strong>
+    <span>${escapeHtml(row.address || '')}${row.city ? `, ${escapeHtml(row.city)}` : ''}</span>
+    <span>Communication index: ${formatNumber(comm, 2)}</span>
+    <span>CMS rating: ${formatNumber(rating, 0)}</span>
+    <span>Linked tract HFI: ${formatNumber(tractHfi, 3)}</span>
+  </div>`;
+}
+
+function populateHospitalOptions(records) {
+  const list = document.getElementById('hospital-options');
+  if (!list) return;
+  list.innerHTML = '';
+  records
+    .map(row => row.name)
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b))
+    .forEach(name => {
+      const option = document.createElement('option');
+      option.value = name;
+      list.appendChild(option);
+    });
 }
 
 function classifyHfi(value) {
