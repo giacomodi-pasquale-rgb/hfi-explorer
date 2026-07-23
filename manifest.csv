@@ -1,0 +1,7 @@
+file,rows,description,notes
+hfi_v1_1_nyc_cms_acute_hospital_universe_33.csv,33,Full NYC CMS-listed acute-care hospital universe used by the Explorer; includes HCAHPS validation flag and linked tract HFI context.,
+hfi_v1_1_nyc_hcahps_validation_hospitals_32.csv,32,HCAHPS-complete hospital validation analysis file; restricted to the 32 hospitals with required HCAHPS linear communication/experience outcomes.,
+hfi_v1_1_nyc_tract_surface_2229.csv,2229,Corrected tract-level HFI surface used by the Explorer; one row per NYC census tract.,
+hfi_v1_1_nyc_hospital_universe_33_full_analysis_columns.csv,33,Full 33-hospital universe with broader analysis columns preserved from the manuscript rebuild.,
+hfi_v1_1_hospital_inclusion_audit_33.csv,33,Compact inclusion audit for colleague review; shows which hospitals are in the HCAHPS validation sample and why any hospital is not included.,
+hfi_v1_1_hospital_system_summary_by_borough.csv,33 grouped,"Hospital-system summary by borough, derived from the 33-hospital universe.",
