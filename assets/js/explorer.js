@@ -68,7 +68,7 @@ function waitForMapBox() {
 
 async function initExplorer() {
   updateExplorerHeight();
-  map = L.map('map', { zoomControl: true, zoomSnap: 0.25, preferCanvas: true }).setView(CONFIG.mapCenter, CONFIG.mapZoom);
+  map = L.map('map', { zoomControl: true, zoomSnap: 0.25, preferCanvas: true, doubleClickZoom: false }).setView(CONFIG.mapCenter, CONFIG.mapZoom);
   map.whenReady(() => scheduleMapResize());
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
     attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
@@ -88,6 +88,7 @@ async function initExplorer() {
 
   tractLayer = L.geoJSON(null, { pane: 'tractPane', style: styleTract, onEachFeature: onEachTract }).addTo(map);
   hospitalLayer = L.layerGroup().addTo(map);
+  map.on({ click: handleMapTractClick, dblclick: handleMapTractClick });
   wireControls();
   scheduleMapResize();
 
@@ -140,6 +141,7 @@ function fitMapWhenStable(bounds) {
 }
 
 async function loadGeoJson(url) {
+  if (window.HFI_TRACTS_GEOJSON) return window.HFI_TRACTS_GEOJSON;
   const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) throw new Error(`${url}: ${res.status} ${res.statusText}`);
   return await res.json();
@@ -147,8 +149,9 @@ async function loadGeoJson(url) {
 
 function loadCsv(url) {
   return new Promise((resolve, reject) => {
-    Papa.parse(url, {
-      download: true,
+    const inlineCsv = url.includes('hfi_hospitals') ? window.HFI_HOSPITALS_CSV : null;
+    Papa.parse(inlineCsv || url, {
+      download: !inlineCsv,
       header: true,
       dynamicTyping: false,
       skipEmptyLines: true,
@@ -212,7 +215,7 @@ function buildMapFromGeoJson(geojson, hospitalRows) {
   drawHospitals(hospitalRecords);
   updateStats(hfiValues, hospitalRecords.length);
   drawLegend();
-  setStatus('ready', `Loaded ${tractFeatures.length.toLocaleString()} HFI tracts and ${hospitalRecords.length.toLocaleString()} linked hospitals.`);
+  setStatus('ready', `Loaded ${tractFeatures.length.toLocaleString()} HFI tracts, ${hospitalRecords.length.toLocaleString()} CMS-listed acute-care hospitals, and ${countValidationHospitals(hospitalRecords).toLocaleString()} HCAHPS-complete validation hospitals.`);
 
   const bounds = tractLayer.getBounds();
   if (bounds.isValid()) {
@@ -331,22 +334,20 @@ function drawHospitals(records) {
     const lon = numberValue(getValue(row, CONFIG.longitudeAliases));
     const comm = numberValue(getValue(row, CONFIG.communicationAliases));
     const rating = numberValue(row.hospital_overall_rating);
-    const marker = L.circleMarker([lat, lon], {
+    const included = isHcahpsComplete(row);
+    const markerStyle = {
       pane: 'hospitalPane',
-      radius: 7.5,
-      color: '#07192c',
-      weight: 2.1,
-      fillColor: Number.isFinite(comm) ? '#ffd166' : '#ffffff',
-      fillOpacity: .98
-    });
-    marker.defaultStyle = {
-      radius: 7.5,
-      color: '#07192c',
-      weight: 2.1,
-      fillColor: Number.isFinite(comm) ? '#ffd166' : '#ffffff',
-      fillOpacity: .98
+      radius: included ? 7.8 : 7.2,
+      color: included ? '#07192c' : '#5d6b7c',
+      weight: included ? 2.1 : 1.9,
+      fillColor: included ? '#ffd166' : '#ffffff',
+      fillOpacity: included ? .98 : .92,
+      dashArray: included ? null : '3 2'
     };
-    marker.on('click', () => {
+    const marker = L.circleMarker([lat, lon], markerStyle);
+    marker.defaultStyle = markerStyle;
+    marker.on('click', e => {
+      L.DomEvent.stop(e);
       selectHospital(row, marker, comm, rating);
     });
     marker.bindPopup(hospitalPopup(row, comm, rating));
@@ -367,19 +368,99 @@ function selectHospital(row, marker, comm = numberValue(getValue(row, CONFIG.com
   marker.bringToFront();
   marker.openPopup();
   showFeatureInfo('Hospital', row.name, {
-    Borough: standardBorough(row.county || ''),
+    System: row.hospital_system || 'Not classified',
+    Borough: row.borough || standardBorough(row.county || ''),
+    'Public/private': row.public_private_designation || row.hospital_ownership || 'Not classified',
+    'HCAHPS validation': validationLabel(row),
+    'Linked tract HFI': formatNumber(hospitalHfi(row), 3),
+    'Provider-time availability': formatNumber(numberValue(row.provider_time_weight_sum), 3),
     'Overall CMS rating': formatNumber(rating, 0),
     'Communication index': formatNumber(comm, 2),
     'Doctor communication': formatNumber(numberValue(row.hcahps_doctor_comm_linear), 1),
-    'Nurse communication': formatNumber(numberValue(row.hcahps_nurse_comm_linear), 1),
-    'Linked tract HFI': formatNumber(numberValue(row.fragmentation), 3)
+    'Nurse communication': formatNumber(numberValue(row.hcahps_nurse_comm_linear), 1)
   });
   focusFeatureInfo();
+}
+
+
+function isHcahpsComplete(row) {
+  const flag = String(row?.included_in_hcahps_validation || '').toLowerCase();
+  return flag === 'yes' || flag === 'true' || flag === '1';
+}
+
+function countValidationHospitals(records) {
+  return (records || []).filter(isHcahpsComplete).length;
+}
+
+function validationLabel(row) {
+  if (isHcahpsComplete(row)) return 'Included in HCAHPS-complete validation sample';
+  return row?.hcahps_exclusion_reason || 'CMS-listed acute-care hospital; HCAHPS linear outcomes unavailable';
+}
+
+function hospitalHfi(row) {
+  return numberValue(row.fragmentation_index) ?? numberValue(row.fragmentation);
 }
 
 function resetHospitalMarker(marker) {
   if (!marker) return;
   marker.setStyle(marker.defaultStyle || { radius: 7.5, color: '#07192c', weight: 2.1, fillColor: '#ffd166', fillOpacity: .98 });
+}
+
+function handleMapTractClick(e) {
+  if (!map.hasLayer(tractLayer) || !e?.latlng) return;
+  const match = findTractLayerAtLatLng(e.latlng);
+  if (!match) return;
+  if (e.originalEvent) L.DomEvent.stop(e.originalEvent);
+  selectTract(match.feature, match.layer);
+}
+
+function findTractLayerAtLatLng(latlng) {
+  let selected = null;
+  let smallestBounds = Infinity;
+  tractLayer.eachLayer(layer => {
+    if (!layer.feature || !layer.getBounds?.().contains(latlng)) return;
+    if (!featureContainsLatLng(layer.feature, latlng)) return;
+    const bounds = layer.getBounds();
+    const boundsSize = bounds.getNorthWest().distanceTo(bounds.getSouthEast());
+    if (boundsSize < smallestBounds) {
+      smallestBounds = boundsSize;
+      selected = { feature: layer.feature, layer };
+    }
+  });
+  return selected;
+}
+
+function featureContainsLatLng(feature, latlng) {
+  const geometry = feature?.geometry;
+  if (!geometry || !Array.isArray(geometry.coordinates)) return false;
+  const lng = latlng.lng;
+  const lat = latlng.lat;
+  if (geometry.type === 'Polygon') return polygonContainsLatLng(geometry.coordinates, lng, lat);
+  if (geometry.type === 'MultiPolygon') {
+    return geometry.coordinates.some(polygon => polygonContainsLatLng(polygon, lng, lat));
+  }
+  return false;
+}
+
+function polygonContainsLatLng(polygon, lng, lat) {
+  if (!Array.isArray(polygon) || !polygon.length) return false;
+  if (!ringContainsLatLng(polygon[0], lng, lat)) return false;
+  return !polygon.slice(1).some(ring => ringContainsLatLng(ring, lng, lat));
+}
+
+function ringContainsLatLng(ring, lng, lat) {
+  if (!Array.isArray(ring) || ring.length < 3) return false;
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = numberValue(ring[i]?.[0]);
+    const yi = numberValue(ring[i]?.[1]);
+    const xj = numberValue(ring[j]?.[0]);
+    const yj = numberValue(ring[j]?.[1]);
+    if (![xi, yi, xj, yj].every(Number.isFinite)) continue;
+    const crosses = (yi > lat) !== (yj > lat);
+    if (crosses && lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
 }
 
 function wireControls() {
@@ -424,6 +505,8 @@ function filterMap(shouldFit = true) {
   drawHospitals(filteredHospitals);
   document.getElementById('tract-count').textContent = filtered.length.toLocaleString();
   document.getElementById('hospital-count').textContent = filteredHospitals.length.toLocaleString();
+  const validationEl = document.getElementById('validation-count');
+  if (validationEl) validationEl.textContent = countValidationHospitals(filteredHospitals).toLocaleString();
   const filteredValues = filtered.map(f => f.properties.hfi_value).filter(v => Number.isFinite(v));
   if (filteredValues.length) {
     document.getElementById('hfi-range').textContent = `${formatNumber(Math.min(...filteredValues), 2)} to ${formatNumber(Math.max(...filteredValues), 2)}`;
@@ -449,6 +532,8 @@ function filterMap(shouldFit = true) {
 function updateStats(values, hospitals) {
   document.getElementById('tract-count').textContent = tractFeatures.length.toLocaleString();
   document.getElementById('hospital-count').textContent = hospitals.toLocaleString();
+  const validationEl = document.getElementById('validation-count');
+  if (validationEl) validationEl.textContent = countValidationHospitals(hospitalRecords).toLocaleString();
   const min = Math.min(...values), max = Math.max(...values);
   document.getElementById('hfi-range').textContent = values.length ? `${formatNumber(min, 2)} to ${formatNumber(max, 2)}` : '—';
   updateSummary(tractFeatures.length, hospitals, values);
@@ -460,6 +545,8 @@ function updateSummary(tracts, hospitals, values) {
   const rangeEl = document.getElementById('summary-hfi-range');
   if (tractEl) tractEl.textContent = tracts.toLocaleString();
   if (hospitalEl) hospitalEl.textContent = hospitals.toLocaleString();
+  const validationEl = document.getElementById('summary-validation-count');
+  if (validationEl) validationEl.textContent = countValidationHospitals(hospitalRecords.filter(h => !document.getElementById('borough-filter') || document.getElementById('borough-filter').value === 'all' || (h.borough || standardBorough(h.county || '')) === document.getElementById('borough-filter').value)).toLocaleString();
   if (rangeEl) {
     const clean = values.filter(v => Number.isFinite(v));
     rangeEl.textContent = clean.length ? `${formatNumber(Math.min(...clean), 2)} to ${formatNumber(Math.max(...clean), 2)}` : '—';
@@ -498,13 +585,15 @@ function focusFeatureInfo() {
 }
 
 function hospitalPopup(row, comm, rating) {
-  const tractHfi = numberValue(row.fragmentation);
+  const tractHfi = hospitalHfi(row);
   return `<div class="popup-card">
     <strong>${escapeHtml(row.name)}</strong>
     <span>${escapeHtml(row.address || '')}${row.city ? `, ${escapeHtml(row.city)}` : ''}</span>
+    <span>${escapeHtml(row.hospital_system || 'Hospital system not classified')}</span>
+    <span>HCAHPS validation: ${escapeHtml(validationLabel(row))}</span>
+    <span>Linked tract HFI: ${formatNumber(tractHfi, 3)}</span>
     <span>Communication index: ${formatNumber(comm, 2)}</span>
     <span>CMS rating: ${formatNumber(rating, 0)}</span>
-    <span>Linked tract HFI: ${formatNumber(tractHfi, 3)}</span>
   </div>`;
 }
 

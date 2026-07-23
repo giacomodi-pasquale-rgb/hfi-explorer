@@ -172,3 +172,5 @@ input[type="search"], select { width: 100%; border: 1px solid var(--line); borde
   .hero-card { padding: 1rem; }
   .mini-map-preview svg { min-height: 112px; }
 }
+
+.leaflet-interactive:hover { filter: saturate(1.08); }

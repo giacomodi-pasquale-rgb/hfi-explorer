@@ -117,7 +117,7 @@ Before treating this as a final public research product, add:
 - `data/hfi_tract_data.csv` — 2,229 tract-level HFI records.
 - `data/nytracts_shp.csv` — original coordinate export used to build tract polygons; archive separately or add via Git LFS if needed.
 - `data/hfi_tracts.geojson` — browser-ready tract map layer generated from the two tract files.
-- `data/hfi_hospitals.csv` — 23 linked hospital records, including NYU Langone Hospitals.
+- `data/hfi_hospitals.csv` — 33 CMS-listed acute-care hospitals, including 32 HCAHPS-complete validation hospitals.
 
 
 ## Local preview note
