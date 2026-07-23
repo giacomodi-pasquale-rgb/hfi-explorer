@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Download Code | HFI</title>
+  <link rel="stylesheet" href="assets/css/style.css?v=20260723-hfi33-code" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="index.html?v=20260723-hfi33-code"><span class="brand-mark">HFI</span><span class="brand-text">Healthcare Fragmentation Index</span></a>
+    <button class="nav-toggle" aria-expanded="false" aria-controls="site-nav">Menu</button>
+    <nav id="site-nav" class="site-nav">
+      <a href="index.html?v=20260723-hfi33-code">Home</a>
+      <a href="explorer.html?v=20260723-hfi33-code">HFI Explorer</a>
+      <a href="about.html?v=20260723-hfi33-code">About HFI</a>
+      <a href="publications.html?v=20260723-hfi33-code">Publications</a>
+      <a href="data.html?v=20260723-hfi33-code">Download Data</a>
+      <a href="code.html?v=20260723-hfi33-code" class="active">Download Code</a>
+      <a href="citation.html?v=20260723-hfi33-code">Citation</a>
+      <a href="future.html?v=20260723-hfi33-code">Future Versions</a>
+    </nav>
+  </header>
+
+  <main class="content-page">
+    <p class="eyebrow">Reproducibility</p>
+    <h1>Download Code</h1>
+    <p class="lead">The HFI code release provides a curated reproducibility package for the corrected NYC HFI surface, CMS acute-care hospital universe, HCAHPS validation models, public tables, and HFI Explorer export.</p>
+
+    <section class="section cards-3">
+      <article>
+        <h3>Full code package</h3>
+        <p><code>code.zip</code></p>
+        <p>Stata and Python scripts bundled with a manifest and README.</p>
+        <a class="button small" href="code.zip" download>Download ZIP</a>
+      </article>
+      <article>
+        <h3>Stata validation code</h3>
+        <p><code>run_hcahps_validation_analysis.do</code></p>
+        <p>Hospital-level HCAHPS validation models and table exports.</p>
+        <a class="button small" href="code/stata/run_hcahps_validation_analysis.do" download>Download DO</a>
+      </article>
+      <article>
+        <h3>Code manifest</h3>
+        <p><code>manifest.csv</code></p>
+        <p>File-by-file description of the code release.</p>
+        <a class="button small" href="code/manifest.csv" download>Download CSV</a>
+      </article>
+    </section>
+
+    <section class="section narrow">
+      <h2>Included workflow</h2>
+      <pre><code>code/
+  README.md
+  manifest.csv
+  stata/
+    run_hcahps_validation_analysis.do
+    archive_initial_hospital_rebuild_validation.do
+  python/
+    rebuild_nyc_hospital_analysis.py
+    rebuild_hfi_surface.py
+    make_corrected_hfi_word_ready_tables.py
+    build_full_submission_manuscript.py
+    build_hfi_explorer_v1_1_site.py
+    export_hfi_v1_1_updated_csvs.py
+    build_hfi_v1_1_code_release.py</code></pre>
+    </section>
+
+    <section class="section narrow muted-box">
+      <h2>Release note</h2>
+      <p>This is a curated public code release rather than a private working directory. It includes the scripts needed to audit the HFI v1.1 surface, hospital universe, validation models, public tables, and Explorer export, while excluding scratch files and local manuscript drafts.</p>
+    </section>
+  </main>
+  <footer class="site-footer"><p>Healthcare Fragmentation Index research program.</p></footer>
+  <script src="assets/js/site.js"></script>
+</body>
+</html>
